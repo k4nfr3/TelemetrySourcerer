@@ -16,6 +16,8 @@ VOID ResizeWindow(HWND);
 VOID KmcLoadResults();
 VOID KmcSuppressCallback();
 VOID KmcRevertCallback();
+VOID KmcSuppressAllCallback();
+
 int CALLBACK KmcCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 
 VOID UmhLoadResults();
