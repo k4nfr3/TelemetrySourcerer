@@ -32,6 +32,9 @@ struct WINDOW_HANDLES {
     HWND KmcRefreshButton;
     HWND KmcSuppressButton;
     HWND KmcRevertButton;
+    // FBU
+    HWND KmcRemoveAllButton;
+    // end FBU
     HWND KmcCountLabel;
     HWND KmcTipLabel;
     HWND KmcListView;
@@ -202,6 +205,9 @@ LRESULT CALLBACK KmcWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
                 KmcSuppressCallback();
             else if (wh.KmcRevertButton == (HWND)lParam)
                 KmcRevertCallback();
+            // fbu
+            else if (wh.KmcRemoveAllButton == (HWND)lParam)
+                KmcSuppressAllCallback();
             break;
         }
         }
@@ -919,12 +925,28 @@ VOID PaintWindow(HWND hWnd)
         NULL);
     SendMessage(wh.KmcRevertButton, WM_SETFONT, (WPARAM)hFont, TRUE);
 
+    // FBU
+    wh.KmcRemoveAllButton = CreateWindowEx(
+        NULL,
+        L"BUTTON",
+        L"Remove ALL",
+        WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
+        320,
+        5,
+        100,
+        30,
+        wh.KmcPage,
+        NULL,
+        g_hInst,
+        NULL);
+    SendMessage(wh.KmcRemoveAllButton, WM_SETFONT, (WPARAM)hFont, TRUE);
+
     wh.KmcCountLabel = CreateWindowEx(
         NULL,
         WC_STATIC,
         L"Count: 0 callbacks.",
         WS_CHILD | WS_VISIBLE,
-        320,
+        425,
         5,
         350,
         15,
@@ -939,7 +961,7 @@ VOID PaintWindow(HWND hWnd)
         WC_STATIC,
         L"Tip: No results? Run elevated to load the driver.",
         WS_CHILD | WS_VISIBLE,
-        320,
+        425,
         20,
         250,
         15,
@@ -953,7 +975,7 @@ VOID PaintWindow(HWND hWnd)
         NULL,
         WC_LISTVIEW,
         L"",
-        WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT | LVS_SINGLESEL,
+        WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT,
         5,
         40,
         rcMain.right - 15,
@@ -965,7 +987,7 @@ VOID PaintWindow(HWND hWnd)
     ListView_SetExtendedListViewStyle(wh.KmcListView, LVS_EX_FULLROWSELECT);
 
     LVCOLUMN lvc = { 0 };
-    lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM;
+    lvc.mask = LVCF_FMT | LVCF_WIDTH | LVCF_TEXT | LVCF_SUBITEM ;
     lvc.iSubItem = 0;
     lvc.pszText = (LPWSTR)L"Collection Type";
     lvc.cx = 150;
@@ -1419,33 +1441,55 @@ int CALLBACK KmcCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 // Called from: KmcWndProc when clicking the suppress button.
 VOID KmcSuppressCallback()
 {
-    int SelectedIndex = ListView_GetNextItem(wh.KmcListView, -1, LVNI_SELECTED);
+    int mycounter;
+    int SelectedIndex;
+    int LastSelectedIndex = -1;
+    BOOL LastStatusSupressCallback = FALSE;
+    WCHAR MessageTitle[MAX_PATH] = { 0 };
 
-    if (SelectedIndex != -1)
-    {
-        LVITEM lvi = { 0 };
-        lvi.mask = LVIF_PARAM;
-        lvi.iItem = SelectedIndex;
-        lvi.iSubItem = 0;
-        ListView_GetItem(wh.KmcListView, &lvi);
+    SelectedIndex = -1;
+    for (int mycounter = 1; mycounter <= 20; mycounter++) {
 
-        PCALLBACK_ENTRY Callback = wd.KmcCallbacks.at(lvi.lParam);
-        WCHAR MessageTitle[MAX_PATH] = { 0 };
-        StringCbPrintfW(MessageTitle, MAX_PATH, L"%ls + 0x%x", Callback->ModuleName, Callback->ModuleOffset);
-
-        if (SuppressCallback(Callback))
+        SelectedIndex = ListView_GetNextItem(wh.KmcListView, LastSelectedIndex, LVNI_SELECTED);
+        LastSelectedIndex = SelectedIndex;
+        if (SelectedIndex != -1)
         {
-            Callback->Suppressed = TRUE;
-            MessageBox(NULL, L"Successfully suppressed callback!", MessageTitle, MB_OK | MB_ICONINFORMATION);
-            KmcLoadResults();
-            ListView_EnsureVisible(wh.KmcListView, SelectedIndex, FALSE);
+            LVITEM lvi = { 0 };
+            lvi.mask = LVIF_PARAM;
+            lvi.iItem = SelectedIndex;
+            lvi.iSubItem = 0;
+            ListView_GetItem(wh.KmcListView, &lvi);
+
+            PCALLBACK_ENTRY Callback = wd.KmcCallbacks.at(lvi.lParam);
+            StringCbPrintfW(MessageTitle, MAX_PATH, L"%ls + 0x%x", Callback->ModuleName, Callback->ModuleOffset);
+
+            if (SuppressCallback(Callback))
+            {
+                Callback->Suppressed = TRUE;
+                LastStatusSupressCallback = TRUE;
+            }
+            else
+            {
+                MessageBox(NULL, L"Callback could not be suppressed for unspecified reason.", MessageTitle, MB_OK | MB_ICONERROR);
+            }
         }
-        else
-        {
-            MessageBox(NULL, L"Callback could not be suppressed for unspecified reason.", MessageTitle, MB_OK | MB_ICONERROR);
-        }
+
     }
+    if (LastStatusSupressCallback) {
+        MessageBox(NULL, L"Successfully suppressed callback(s)!", MessageTitle, MB_OK | MB_ICONINFORMATION);
+    }
+
+    KmcLoadResults();
+    ListView_EnsureVisible(wh.KmcListView, SelectedIndex, FALSE);
+
 }
+// FBU
+
+VOID KmcSuppressAllCallback()
+{
+    MessageBox(NULL, L"Function not yet finished to be implemented.", L"Ooops", MB_OK | MB_ICONERROR);
+}
+
 
 // Function:    KmcRevertCallback
 // Description: Reverts the selected callback (if suppressed/eligible).
