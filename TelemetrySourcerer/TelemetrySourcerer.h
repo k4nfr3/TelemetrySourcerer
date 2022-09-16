@@ -2,8 +2,12 @@
 
 #include <Windows.h>
 
+#include "raw_driver.hpp"
+#include "file_utils.hpp"
+#include <filesystem>
+
 #define TOOL_NAME L"Telemetry Sourcerer"
-#define VERSION   L"0.10.0"
+#define VERSION   L"0.10.1a"
 
 LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 LRESULT CALLBACK KmcWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -29,3 +33,5 @@ VOID UmeLoadResults();
 VOID UmeDisableSelectedProvider();
 VOID UmeStopTracingSession();
 int CALLBACK UmeCompareFunc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
+
+bool ExtractDriver();
