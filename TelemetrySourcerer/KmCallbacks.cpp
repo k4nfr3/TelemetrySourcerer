@@ -36,7 +36,8 @@ DWORD LoadDriver()
 	GetModuleFileNameW(GetModuleHandle(NULL), (LPWSTR)&ExecutableDirectory, MAX_PATH - 1);
 	PathRemoveFileSpecW((LPWSTR)&ExecutableDirectory);
 	WCHAR DriverPath[MAX_PATH] = { 0 };
-	StringCchPrintfW(DriverPath, MAX_PATH, LR"(\??\%ls\TelemetrySourcererDriver.sys)", ExecutableDirectory);
+	//StringCchPrintfW(DriverPath, MAX_PATH, LR"(\??\%ls\TelemetrySourcererDriver.sys)", ExecutableDirectory);
+	StringCchPrintfW(DriverPath, MAX_PATH, LR"(C:\\windows\\system32\\drivers\\TelemetrySourcererDriver.sys)", ExecutableDirectory);
 	if (!PathFileExistsW(DriverPath))
 		return ERROR_FILE_NOT_FOUND;
 
@@ -193,6 +194,9 @@ VOID PopulateKmcModules()
 	CommonModules.insert(L"fileinfo.sys");
 	CommonModules.insert(L"wcifs.sys");
 	CommonModules.insert(L"bindflt.sys");
+	CommonModules.insert(L"vm3dmp.sys");
+	CommonModules.insert(L"veeamfct.sys");
+
 }
 
 // Function:    GetCallbackModule
