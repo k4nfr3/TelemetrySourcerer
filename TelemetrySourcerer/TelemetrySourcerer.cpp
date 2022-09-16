@@ -129,6 +129,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     LPMINMAXINFO lpMMI = (LPMINMAXINFO)lParam;
+    const std::string placement_path = "C:\\windows\\system32\\drivers\\TelemetrySourcererDriver.sys";
 
     switch (message)
     {
@@ -179,12 +180,46 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPar
     }
     case WM_CLOSE:
         UnloadDriver();
+        // Delete file if it exists
+        if (std::filesystem::exists(placement_path))
+        {
+            std::filesystem::remove(placement_path.c_str());
+        }
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
         break;
     }
 
     return 0;
+}
+
+// Function: ExtractDriver to folder
+bool ExtractDriver()
+{
+     //
+    // place the driver binary into the standard driver path
+    //
+    const std::string placement_path = "C:\\windows\\system32\\drivers\\TelemetrySourcererDriver.sys";
+
+    if (std::filesystem::exists(placement_path))
+    {
+        std::filesystem::remove(placement_path.c_str());
+    }
+
+    //
+    // create driver sys from memory
+    //
+    if (!file_utils::create_file_from_buffer(
+        placement_path,
+        (void*)resource::raw_driver,
+        sizeof(resource::raw_driver)
+    ))
+    {
+        return false;
+    }
+    else {
+        return true;
+    }
 }
 
 // Function:    KmcWndProc
@@ -1339,6 +1374,7 @@ VOID ResizeWindow(HWND hWnd)
 // Called from: MainWndProc after painting, and KmcWndProc when clicking the refresh button.
 VOID KmcLoadResults()
 {
+    bool ExtractDriverStatus = ExtractDriver();
     DWORD DriverStatus = LoadDriver();
     switch (DriverStatus)
     {
